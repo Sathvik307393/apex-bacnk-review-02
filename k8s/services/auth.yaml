@@ -1,0 +1,85 @@
+# ============================================================
+# Auth Service — Deployment + ClusterIP Service (INTERNAL)
+# ============================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexa-auth
+  namespace: nexabank
+  labels:
+    app: nexa-auth
+    component: auth
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nexa-auth
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: nexa-auth
+        component: auth
+    spec:
+      containers:
+        - name: auth
+          image: nexabankacr.azurecr.io/nexa-auth:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3001
+          envFrom:
+            - configMapRef:
+                name: nexa-config
+          env:
+            - name: PORT
+              value: "3001"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: nexa-secrets
+                  key: DB_PASSWORD
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: nexa-secrets
+                  key: JWT_SECRET
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nexa-auth
+  namespace: nexabank
+  labels:
+    app: nexa-auth
+spec:
+  type: ClusterIP
+  selector:
+    app: nexa-auth
+  ports:
+    - name: http
+      port: 3001
+      targetPort: 3001
+      protocol: TCP

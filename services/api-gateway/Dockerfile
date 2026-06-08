@@ -1,25 +1,30 @@
 FROM node:18-alpine
 
+# Create non-root user for security
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
 WORKDIR /app
 
-# Copy package files
-COPY services/api-gateway/package*.json ./
+# Set production environment
+ENV NODE_ENV=production
 
-# Install dependencies
-RUN npm install
+# Copy package files and install production dependencies only
+COPY --chown=appuser:appgroup services/api-gateway/package*.json ./
+RUN npm ci --only=production && npm cache clean --force
 
-# Copy source code
-COPY services/api-gateway .
+# Copy source code and shared modules
+COPY --chown=appuser:appgroup services/api-gateway .
+COPY --chown=appuser:appgroup shared /app/shared
 
-# Copy shared modules
-COPY shared /app/shared
+# Switch to non-root user
+USER appuser
 
-# Expose port (will be overridden by compose)
+# Expose port
 EXPOSE 3000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {if (r.statusCode !== 200) process.exit(1)}).on('error', () => process.exit(1))"
 
 # Start application
-CMD ["npm", "start"]
+CMD ["node", "server.js"]

@@ -1,0 +1,90 @@
+# ============================================================
+# KYC Service — Deployment + ClusterIP Service (INTERNAL)
+# ============================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexa-kyc
+  namespace: nexabank
+  labels:
+    app: nexa-kyc
+    component: kyc
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nexa-kyc
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: nexa-kyc
+        component: kyc
+    spec:
+      containers:
+        - name: kyc
+          image: nexabankacr.azurecr.io/nexa-kyc:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3004
+          envFrom:
+            - configMapRef:
+                name: nexa-config
+          env:
+            - name: PORT
+              value: "3004"
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: nexa-secrets
+                  key: DB_PASSWORD
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: nexa-secrets
+                  key: JWT_SECRET
+            - name: AZURE_STORAGE_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: nexa-secrets
+                  key: AZURE_STORAGE_CONNECTION_STRING
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "384Mi"
+            limits:
+              cpu: "500m"
+              memory: "768Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3004
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3004
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nexa-kyc
+  namespace: nexabank
+  labels:
+    app: nexa-kyc
+spec:
+  type: ClusterIP
+  selector:
+    app: nexa-kyc
+  ports:
+    - name: http
+      port: 3004
+      targetPort: 3004
+      protocol: TCP

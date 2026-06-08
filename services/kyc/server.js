@@ -1,6 +1,8 @@
 /**
  * KYC Service
- * Manages Know Your Customer document uploads and verification
+ * Manages Know Your Customer document uploads and verification.
+ * Files are stored in Azure Blob Storage when AZURE_STORAGE_CONNECTION_STRING is set,
+ * and fall back to local disk when running locally without Azure.
  */
 
 const express = require('express');
@@ -22,25 +24,60 @@ const { readJsonDb, writeJsonDb, ensureDir } = require('./shared/utils');
 
 const JSON_DB_PATH = path.join(__dirname, '..', '..', 'database.json');
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
+const AZURE_CONTAINER = 'kyc-documents';
 let isPg = false;
 
-ensureDir(UPLOAD_DIR);
+// ─── Azure Blob Storage helper ──────────────────────────────────────────────
+let blobServiceClient = null;
+let containerClient = null;
+const AZURE_CONN_STR = process.env.AZURE_STORAGE_CONNECTION_STRING;
 
+if (AZURE_CONN_STR) {
+  const { BlobServiceClient } = require('@azure/storage-blob');
+  blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_CONN_STR);
+  containerClient = blobServiceClient.getContainerClient(AZURE_CONTAINER);
+  console.log('[KYC] Azure Blob Storage configured - uploads will go to Azure');
+} else {
+  // Fallback: local disk
+  ensureDir(UPLOAD_DIR);
+  console.log('[KYC] No AZURE_STORAGE_CONNECTION_STRING - using local disk uploads');
+}
+
+/**
+ * Upload a buffer to Azure Blob Storage.
+ * Returns the blob name (used as the file identifier stored in DB).
+ */
+async function uploadToBlob(blobName, buffer, mimeType) {
+  const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+  await blockBlobClient.upload(buffer, buffer.length, {
+    blobHTTPHeaders: { blobContentType: mimeType }
+  });
+  return blobName;
+}
+
+/**
+ * Download a blob from Azure Blob Storage into a Buffer.
+ */
+async function downloadFromBlob(blobName) {
+  const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+  const downloadResponse = await blockBlobClient.download(0);
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    downloadResponse.readableStreamBody.on('data', (chunk) => chunks.push(chunk));
+    downloadResponse.readableStreamBody.on('end', () => resolve(Buffer.concat(chunks)));
+    downloadResponse.readableStreamBody.on('error', reject);
+  });
+}
+
+// ─── Database init ───────────────────────────────────────────────────────────
 (async () => {
   const connected = await initDatabase();
   isPg = connected;
   console.log('[KYC]', isPg ? 'Using PostgreSQL' : 'Using JSON database');
 })();
 
-// Multer configuration
-const storage = multer.diskStorage({
-  destination: UPLOAD_DIR,
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, 'kyc-' + req.user.id + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
+// ─── Multer configuration ────────────────────────────────────────────────────
+// Always buffer in memory; we either push to Azure Blob or write to local disk afterwards.
 const fileFilter = (req, file, cb) => {
   const allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png'];
   if (allowedMimeTypes.includes(file.mimetype)) {
@@ -51,14 +88,16 @@ const fileFilter = (req, file, cb) => {
 };
 
 const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 }
+  storage: multer.memoryStorage(),
+  fileFilter,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10 MB
 });
+
+// ─── Routes ──────────────────────────────────────────────────────────────────
 
 /**
  * POST /api/kyc/upload
- * Upload KYC document
+ * Upload KYC document to Azure Blob Storage (or local disk as fallback)
  */
 app.post('/api/kyc/upload', authenticateToken, (req, res) => {
   const uploadMiddleware = upload.single('kyc_document');
@@ -75,14 +114,31 @@ app.post('/api/kyc/upload', authenticateToken, (req, res) => {
     }
 
     const docType = req.body.doc_type || 'Document';
-    const filePath = req.file.path;
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const ext = path.extname(req.file.originalname);
+    const fileName = `kyc-${req.user.id}-${uniqueSuffix}${ext}`;
+
+    let storedPath; // what gets saved in the DB as "file_path"
 
     try {
+      if (containerClient) {
+        // ── Azure Blob path ──
+        await uploadToBlob(fileName, req.file.buffer, req.file.mimetype);
+        storedPath = `azure-blob://${AZURE_CONTAINER}/${fileName}`;
+        console.log(`[KYC] Uploaded to Azure Blob: ${storedPath}`);
+      } else {
+        // ── Local disk fallback ──
+        const localPath = path.join(UPLOAD_DIR, fileName);
+        fs.writeFileSync(localPath, req.file.buffer);
+        storedPath = localPath;
+        console.log(`[KYC] Saved to local disk: ${localPath}`);
+      }
+
       let docId;
       if (isPg) {
         const result = await query(
           'INSERT INTO bank_kyc_docs (user_id, file_name, original_name, file_path, mime_type, doc_type, status, uploaded_at) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW()) RETURNING id',
-          [req.user.id, req.file.filename, `${docType}: ${req.file.originalname}`, filePath, req.file.mimetype, docType, 'Pending']
+          [req.user.id, fileName, `${docType}: ${req.file.originalname}`, storedPath, req.file.mimetype, docType, 'Pending']
         );
         docId = result.rows[0].id;
       } else {
@@ -92,9 +148,9 @@ app.post('/api/kyc/upload', authenticateToken, (req, res) => {
         data.kyc_docs.push({
           id: docId,
           user_id: req.user.id,
-          file_name: req.file.filename,
+          file_name: fileName,
           original_name: `${docType}: ${req.file.originalname}`,
-          file_path: filePath,
+          file_path: storedPath,
           mime_type: req.file.mimetype,
           doc_type: docType,
           status: 'Pending',
@@ -103,23 +159,23 @@ app.post('/api/kyc/upload', authenticateToken, (req, res) => {
         writeJsonDb(JSON_DB_PATH, data);
       }
 
-      // Trigger local validation simulator
+      // Trigger document processor (fire-and-forget)
       const axios = require('axios');
       const docProcessorUrl = process.env.DOC_PROCESSOR_URL || 'http://doc-processor:3005';
       axios.post(`${docProcessorUrl}/api/validate`, {
-        docId: docId,
+        docId,
         userId: req.user.id,
-        docType: docType,
-        fileName: req.file.filename,
-        filePath: filePath,
+        docType,
+        fileName,
+        filePath: storedPath,
         originalName: req.file.originalname,
         mimeType: req.file.mimetype
       }).catch(err => console.warn('[KYC] Doc processor call failed:', err.message));
 
       res.json({
         message: `${docType} document uploaded successfully for verification.`,
-        docId: docId,
-        docType: docType
+        docId,
+        docType
       });
     } catch (dbErr) {
       console.error('[KYC] Upload error:', dbErr);
@@ -130,7 +186,7 @@ app.post('/api/kyc/upload', authenticateToken, (req, res) => {
 
 /**
  * GET /api/kyc/download/:filename
- * Download KYC document
+ * Download KYC document from Azure Blob Storage (or local disk as fallback)
  */
 app.get('/api/kyc/download/:filename', authenticateToken, async (req, res) => {
   try {
@@ -149,14 +205,21 @@ app.get('/api/kyc/download/:filename', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Document not found.' });
     }
 
-    const filePath = path.join(UPLOAD_DIR, filename);
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'File not found.' });
-    }
-
     res.setHeader('Content-Disposition', `attachment; filename="${doc.original_name}"`);
     res.setHeader('Content-Type', doc.mime_type || 'application/octet-stream');
-    res.sendFile(filePath);
+
+    if (containerClient && doc.file_path && doc.file_path.startsWith('azure-blob://')) {
+      // ── Download from Azure Blob ──
+      const buffer = await downloadFromBlob(filename);
+      res.send(buffer);
+    } else {
+      // ── Local disk fallback ──
+      const filePath = path.join(UPLOAD_DIR, filename);
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'File not found.' });
+      }
+      res.sendFile(filePath);
+    }
   } catch (error) {
     console.error('[KYC] Download error:', error);
     res.status(500).json({ error: 'Failed to download file.' });
@@ -226,8 +289,14 @@ app.post('/api/kyc/form-submit', authenticateToken, async (req, res) => {
   }
 });
 
+// ─── Health check ─────────────────────────────────────────────────────────────
 app.get('/health', (req, res) => {
-  res.json({ status: 'healthy', service: 'kyc', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'healthy',
+    service: 'kyc',
+    storage: containerClient ? 'azure-blob' : 'local-disk',
+    timestamp: new Date().toISOString()
+  });
 });
 
 app.use((err, req, res, next) => {

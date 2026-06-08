@@ -1,0 +1,79 @@
+# ============================================================
+# API Gateway — Deployment + LoadBalancer Service (PUBLIC)
+# ============================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexa-api-gateway
+  namespace: nexabank
+  labels:
+    app: nexa-api-gateway
+    component: gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nexa-api-gateway
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: nexa-api-gateway
+        component: gateway
+    spec:
+      containers:
+        - name: api-gateway
+          image: nexabankacr.azurecr.io/nexa-api-gateway:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: nexa-config
+          env:
+            - name: PORT
+              value: "3000"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nexa-api-gateway
+  namespace: nexabank
+  labels:
+    app: nexa-api-gateway
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-health-probe-request-path: /health
+spec:
+  type: LoadBalancer
+  selector:
+    app: nexa-api-gateway
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
+      protocol: TCP

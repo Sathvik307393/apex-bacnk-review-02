@@ -1,12 +1,14 @@
 /**
  * Document Processor Service
- * Handles asynchronous KYC document validation
- * Simulates Azure Function or background job processing
+ * Handles asynchronous KYC document validation.
+ * Reads files from Azure Blob Storage when AZURE_STORAGE_CONNECTION_STRING is set,
+ * and falls back to local disk when running locally.
  */
 
 const express = require('express');
 const Tesseract = require('tesseract.js');
 const pdfParse = require('pdf-parse');
+const os = require('os');
 require('dotenv').config();
 
 const app = express();
@@ -19,6 +21,46 @@ const { readJsonDb, writeJsonDb } = require('./shared/utils');
 const fs = require('fs');
 const path = require('path');
 
+// ─── Azure Blob Storage helper ───────────────────────────────────────────────
+let containerClient = null;
+const AZURE_CONN_STR = process.env.AZURE_STORAGE_CONNECTION_STRING;
+const AZURE_CONTAINER = 'kyc-documents';
+
+if (AZURE_CONN_STR) {
+  const { BlobServiceClient } = require('@azure/storage-blob');
+  const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_CONN_STR);
+  containerClient = blobServiceClient.getContainerClient(AZURE_CONTAINER);
+  console.log('[DOC_PROCESSOR] Azure Blob Storage configured');
+} else {
+  console.log('[DOC_PROCESSOR] No AZURE_STORAGE_CONNECTION_STRING - using local disk');
+}
+
+/**
+ * Download a blob to a temporary local file and return the temp path.
+ * Caller is responsible for deleting the file when done.
+ */
+async function downloadBlobToTempFile(blobName, ext) {
+  const tempPath = path.join(os.tmpdir(), `docproc-${Date.now()}${ext}`);
+  const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+  await blockBlobClient.downloadToFile(tempPath);
+  return tempPath;
+}
+
+/**
+ * Resolve a file path: if it is an azure-blob:// URI, download to tmp and return local path.
+ * Returns { localPath, isTempFile } so the caller can clean up temp files.
+ */
+async function resolveFilePath(filePath, fileName) {
+  if (filePath && filePath.startsWith('azure-blob://') && containerClient) {
+    const ext = path.extname(fileName || filePath);
+    const tempPath = await downloadBlobToTempFile(fileName, ext);
+    console.log(`[DOC_PROCESSOR] Downloaded from Azure Blob to temp: ${tempPath}`);
+    return { localPath: tempPath, isTempFile: true };
+  }
+  // Local disk path
+  return { localPath: filePath, isTempFile: false };
+}
+
 const JSON_DB_PATH = path.join(__dirname, '..', '..', 'database.json');
 let isPg = false;
 
@@ -29,11 +71,11 @@ let isPg = false;
 })();
 
 /**
- * Extract text from PDF file
+ * Extract text from PDF file (reads from a resolved local path)
  */
-async function extractPdfText(filePath) {
+async function extractPdfText(localFilePath) {
   try {
-    const fileBuffer = fs.readFileSync(filePath);
+    const fileBuffer = fs.readFileSync(localFilePath);
     const data = await pdfParse(fileBuffer);
     return data.text || '';
   } catch (error) {
@@ -52,24 +94,26 @@ app.post('/api/validate', async (req, res) => {
 
     console.log(`[DOC_PROCESSOR] Starting validation for Doc ${docId} (${docType})`);
 
-    // Async processing with OCR - increased timeout to 3 seconds to allow OCR to complete
+    // Async processing with OCR - 5 second delay to allow other services to settle
     setTimeout(async () => {
+      let tempFilePath = null;
       try {
-        const originalname = originalName || fileName || '';
-        const fs = require('fs');
-        
+        // Resolve the file path (downloads from Azure Blob to a temp file if needed)
+        const { localPath, isTempFile } = await resolveFilePath(filePath, fileName);
+        if (isTempFile) tempFilePath = localPath;
+
         let isValid = false;
         let reason = '';
         let extractedData = {};
-        
+
         // Perform OCR on the uploaded file if it's an image (NOT PDF)
-        const isPdf = filePath && filePath.match(/\.pdf$/i);
-        const isImageFile = filePath && fs.existsSync(filePath) && (mimeType.startsWith('image/') || filePath.match(/\.(jpg|jpeg|png|gif|bmp)$/i));
-        
+        const isPdf = (localPath && localPath.match(/\.pdf$/i)) || (fileName && fileName.match(/\.pdf$/i));
+        const isImageFile = localPath && fs.existsSync(localPath) && (mimeType.startsWith('image/') || localPath.match(/\.(jpg|jpeg|png|gif|bmp)$/i));
+
         if (isImageFile && !isPdf) {
           try {
-            console.log(`[DOC_PROCESSOR] Running OCR on ${filePath}`);
-            const { data: { text } } = await Tesseract.recognize(filePath, 'eng+hin');
+            console.log(`[DOC_PROCESSOR] Running OCR on ${localPath}`);
+            const { data: { text } } = await Tesseract.recognize(localPath, 'eng+hin');
             const extractedText = text.toUpperCase();
             
             console.log(`[DOC_PROCESSOR] OCR Text: ${extractedText.substring(0, 200)}...`);
@@ -158,11 +202,11 @@ app.post('/api/validate', async (req, res) => {
             isValid = false;
             reason = `OCR processing failed: ${ocrError.message}. Please upload a clearer image.`;
           }
-        } else if (isPdf && filePath && fs.existsSync(filePath)) {
+        } else if (isPdf && localPath && fs.existsSync(localPath)) {
           // Process PDF documents - extract text and parse
           try {
-            console.log(`[DOC_PROCESSOR] Extracting text from PDF: ${filePath}`);
-            const extractedText = await extractPdfText(filePath);
+            console.log(`[DOC_PROCESSOR] Extracting text from PDF: ${localPath}`);
+            const extractedText = await extractPdfText(localPath);
             const textUpper = extractedText.toUpperCase();
             
             console.log(`[DOC_PROCESSOR] PDF Text (first 200 chars): ${textUpper.substring(0, 200)}...`);
@@ -266,6 +310,11 @@ app.post('/api/validate', async (req, res) => {
 
         console.log(`[DOC_PROCESSOR] Validation complete: Doc ${docId} - ${isValid ? 'VERIFIED' : 'INVALID'}`);
 
+        // Clean up temp file if it was downloaded from Azure Blob
+        if (tempFilePath && fs.existsSync(tempFilePath)) {
+          try { fs.unlinkSync(tempFilePath); } catch (_) {}
+        }
+
         // Trigger audit logging
         const auditUrl = process.env.AUDIT_SERVICE_URL || 'http://audit:3006';
         const axios = require('axios');
@@ -278,8 +327,12 @@ app.post('/api/validate', async (req, res) => {
 
       } catch (error) {
         console.error('[DOC_PROCESSOR] Validation error:', error);
+        // Clean up temp file on error
+        if (tempFilePath && fs.existsSync(tempFilePath)) {
+          try { fs.unlinkSync(tempFilePath); } catch (_) {}
+        }
       }
-    }, 5000); // 5 second delay to allow OCR processing to complete
+    }, 5000); // 5 second delay to allow services to settle
 
     res.json({ message: 'Document queued for validation.' });
   } catch (error) {
