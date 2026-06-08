@@ -3,13 +3,16 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY services/api-gateway/package*.json ./
 
 # Install dependencies
 RUN npm install
 
 # Copy source code
-COPY . .
+COPY services/api-gateway .
+
+# Copy shared modules
+COPY shared /app/shared
 
 # Expose port (will be overridden by compose)
 EXPOSE 3000

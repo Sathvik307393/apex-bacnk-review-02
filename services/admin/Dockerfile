@@ -1,8 +1,9 @@
 FROM node:18-alpine
 WORKDIR /app
-COPY package*.json ./
+COPY services/admin/package*.json ./
 RUN npm install
-COPY . .
+COPY services/admin .
+COPY shared /app/shared
 EXPOSE 3007
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3007/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"

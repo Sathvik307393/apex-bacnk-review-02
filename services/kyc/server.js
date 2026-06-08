@@ -14,9 +14,9 @@ const PORT = process.env.PORT || 3004;
 
 app.use(express.json());
 
-const { initDatabase, query, closeDatabase } = require('../../shared/database');
-const { authenticateToken } = require('../../shared/middleware');
-const { readJsonDb, writeJsonDb, ensureDir } = require('../../shared/utils');
+const { initDatabase, query, closeDatabase } = require('./shared/database');
+const { authenticateToken } = require('./shared/middleware');
+const { readJsonDb, writeJsonDb, ensureDir } = require('./shared/utils');
 
 const JSON_DB_PATH = path.join(__dirname, '..', '..', 'database.json');
 const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');

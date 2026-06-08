@@ -13,9 +13,9 @@ const PORT = process.env.PORT || 3002;
 app.use(express.json());
 
 // Import shared modules
-const { initDatabase, query, isDatabasePostgres, closeDatabase } = require('../../shared/database');
-const { authenticateToken } = require('../../shared/middleware');
-const { readJsonDb } = require('../../shared/utils');
+const { initDatabase, query, isDatabasePostgres, closeDatabase } = require('./shared/database');
+const { authenticateToken } = require('./shared/middleware');
+const { readJsonDb } = require('./shared/utils');
 const fs = require('fs');
 const path = require('path');
 

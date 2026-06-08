@@ -1,8 +1,9 @@
 FROM node:18-alpine
 WORKDIR /app
-COPY package*.json ./
+COPY services/kyc/package*.json ./
 RUN npm install
-COPY . .
+COPY services/kyc .
+COPY shared /app/shared
 EXPOSE 3004
 VOLUME ["/app/uploads"]
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

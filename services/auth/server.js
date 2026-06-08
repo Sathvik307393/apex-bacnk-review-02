@@ -17,9 +17,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Import shared modules
-const { initDatabase, query, isDatabasePostgres, closeDatabase } = require('../../shared/database');
-const { setAuthCookie, generateToken, getClientIp, isSecureConnection, JWT_SECRET } = require('../../shared/middleware');
-const { isValidEmail, isValidPassword, readJsonDb, writeJsonDb } = require('../../shared/utils');
+const { initDatabase, query, isDatabasePostgres, closeDatabase } = require('./shared/database');
+const { setAuthCookie, generateToken, getClientIp, isSecureConnection, JWT_SECRET } = require('./shared/middleware');
+const { isValidEmail, isValidPassword, readJsonDb, writeJsonDb } = require('./shared/utils');
 const fs = require('fs');
 const path = require('path');
 

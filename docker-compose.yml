@@ -25,8 +25,8 @@ services:
   # API Gateway
   api-gateway:
     build:
-      context: ./services/api-gateway
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/api-gateway/Dockerfile
     container_name: apex-api-gateway
     ports:
       - "3000:3000"
@@ -58,8 +58,8 @@ services:
   # Auth Service
   auth:
     build:
-      context: ./services/auth
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/auth/Dockerfile
     container_name: apex-auth-service
     environment:
       NODE_ENV: ${NODE_ENV:-development}
@@ -85,8 +85,8 @@ services:
   # User Service
   user:
     build:
-      context: ./services/user
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/user/Dockerfile
     container_name: apex-user-service
     environment:
       NODE_ENV: ${NODE_ENV:-development}
@@ -110,8 +110,8 @@ services:
   # Transactions Service
   transactions:
     build:
-      context: ./services/transactions
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/transactions/Dockerfile
     container_name: apex-transactions-service
     environment:
       NODE_ENV: ${NODE_ENV:-development}
@@ -135,8 +135,8 @@ services:
   # KYC Service
   kyc:
     build:
-      context: ./services/kyc
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/kyc/Dockerfile
     container_name: apex-kyc-service
     environment:
       NODE_ENV: ${NODE_ENV:-development}
@@ -163,8 +163,8 @@ services:
   # Document Processor Service
   doc-processor:
     build:
-      context: ./services/document-processor
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/document-processor/Dockerfile
     container_name: apex-doc-processor-service
     environment:
       NODE_ENV: ${NODE_ENV:-development}
@@ -191,8 +191,8 @@ services:
   # Audit Service
   audit:
     build:
-      context: ./services/audit
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/audit/Dockerfile
     container_name: apex-audit-service
     environment:
       NODE_ENV: ${NODE_ENV:-development}
@@ -216,8 +216,8 @@ services:
   # Admin Service
   admin:
     build:
-      context: ./services/admin
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/admin/Dockerfile
     container_name: apex-admin-service
     environment:
       NODE_ENV: ${NODE_ENV:-development}
