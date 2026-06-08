@@ -47,8 +47,11 @@ app.post('/api/validate', async (req, res) => {
         let reason = '';
         let extractedData = {};
         
-        // Perform OCR on the uploaded file if it's an image
-        if (filePath && fs.existsSync(filePath) && (mimeType.startsWith('image/') || filePath.match(/\.(jpg|jpeg|png|pdf)$/i))) {
+        // Perform OCR on the uploaded file if it's an image (NOT PDF)
+        const isPdf = filePath && filePath.match(/\.pdf$/i);
+        const isImageFile = filePath && fs.existsSync(filePath) && (mimeType.startsWith('image/') || filePath.match(/\.(jpg|jpeg|png|gif|bmp)$/i));
+        
+        if (isImageFile && !isPdf) {
           try {
             console.log(`[DOC_PROCESSOR] Running OCR on ${filePath}`);
             const { data: { text } } = await Tesseract.recognize(filePath, 'eng+hin');
@@ -140,6 +143,17 @@ app.post('/api/validate', async (req, res) => {
             isValid = false;
             reason = `OCR processing failed: ${ocrError.message}. Please upload a clearer image.`;
           }
+        } else if (isPdf) {
+          // PDF files cannot be processed by Tesseract.js - require manual review or conversion
+          console.log(`[DOC_PROCESSOR] PDF file detected - skipping OCR processing`);
+          isValid = true;
+          reason = 'PDF document received. Manual verification required or please upload image format for automatic extraction.';
+          extractedData = {
+            type: `${docType} (PDF)`,
+            format: 'PDF',
+            status: 'Pending Manual Review',
+            note: 'PDF files require manual verification or conversion to image format for OCR extraction'
+          };
         } else {
           // Fallback for non-image files
           isValid = true;
