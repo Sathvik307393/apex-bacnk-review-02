@@ -179,7 +179,7 @@ app.post('/api/validate', async (req, res) => {
       } catch (error) {
         console.error('[DOC_PROCESSOR] Validation error:', error);
       }
-    }, 2000); // 2 second delay to simulate processing
+    }, 5000); // 5 second delay to allow OCR processing to complete
 
     res.json({ message: 'Document queued for validation.' });
   } catch (error) {
