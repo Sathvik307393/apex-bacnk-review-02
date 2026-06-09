@@ -9,8 +9,9 @@ resource "azurerm_postgresql_flexible_server" "pg" {
   administrator_password = var.admin_password
   storage_mb             = 32768
   sku_name               = "B_Standard_B1ms"
-  # Removed explicit zone pinning. Let Azure automatically pick a zone with available
-  # capacity to avoid InternalServerError (often caused by constrained zones for Free Trial).
+  # Explicitly pin zone to "1" because the server was already created in this zone by Azure.
+  # Terraform errors out if we leave it blank, as it tries to remove the zone from the existing server.
+  zone = "1"
   # Must be false when using VNet/subnet delegation
   public_network_access_enabled = false
   tags                          = var.tags
