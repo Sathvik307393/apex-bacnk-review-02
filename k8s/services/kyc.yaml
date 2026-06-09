@@ -27,7 +27,7 @@ spec:
     spec:
       containers:
         - name: kyc
-          image: nexabankacr.azurecr.io/nexa-kyc:latest
+          image: apexbankregistry.azurecr.io/nexa-kyc:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3004
@@ -99,4 +99,5 @@ spec:
       port: 3004
       targetPort: 3004
       protocol: TCP
+
 

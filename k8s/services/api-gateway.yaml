@@ -27,7 +27,7 @@ spec:
     spec:
       containers:
         - name: api-gateway
-          image: nexabankacr.azurecr.io/nexa-api-gateway:latest
+          image: apexbankregistry.azurecr.io/nexa-api-gateway:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
@@ -88,4 +88,5 @@ spec:
       port: 80
       targetPort: 3000
       protocol: TCP
+
 

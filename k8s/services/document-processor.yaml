@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
         - name: document-processor
-          image: nexabankacr.azurecr.io/nexa-document-processor:latest
+          image: apexbankregistry.azurecr.io/nexa-document-processor:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3005
@@ -101,4 +101,5 @@ spec:
       port: 3005
       targetPort: 3005
       protocol: TCP
+
 

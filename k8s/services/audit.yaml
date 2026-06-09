@@ -27,7 +27,7 @@ spec:
     spec:
       containers:
         - name: audit
-          image: nexabankacr.azurecr.io/nexa-audit:latest
+          image: apexbankregistry.azurecr.io/nexa-audit:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3006
@@ -94,4 +94,5 @@ spec:
       port: 3006
       targetPort: 3006
       protocol: TCP
+
 

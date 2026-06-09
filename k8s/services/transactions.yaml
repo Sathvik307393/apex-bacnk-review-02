@@ -27,7 +27,7 @@ spec:
     spec:
       containers:
         - name: transactions
-          image: nexabankacr.azurecr.io/nexa-transactions:latest
+          image: apexbankregistry.azurecr.io/nexa-transactions:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3003
@@ -94,4 +94,5 @@ spec:
       port: 3003
       targetPort: 3003
       protocol: TCP
+
 
