@@ -91,13 +91,11 @@ jobs:
           # Create/update ConfigMap
           kubectl apply -f k8s/01-configmap.yaml
 
-          # Create Secret from GitHub Actions secrets (base64 auto-encoded by kubectl)
-          kubectl create secret generic nexa-secrets \
-            --namespace nexabank \
-            --from-literal=DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
-            --from-literal=JWT_SECRET="${{ secrets.JWT_SECRET }}" \
-            --from-literal=AZURE_STORAGE_CONNECTION_STRING="${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}" \
-            --dry-run=client -o yaml | kubectl apply -f -
+          # Apply Key Vault CSI Secret Provider Class
+          kubectl apply -f k8s/02-secretproviderclass.yaml
+
+          # Apply Ingress
+          kubectl apply -f k8s/03-ingress.yaml
 
       # Apply all service manifests
       - name: Apply service manifests
