@@ -18,9 +18,22 @@ const { authenticateToken, requireAdmin } = require('./shared/middleware');
 const { readJsonDb, writeJsonDb } = require('./shared/utils');
 const fs = require('fs');
 const path = require('path');
+const { ServiceBusClient } = require('@azure/service-bus');
 
 const JSON_DB_PATH = path.join(__dirname, '..', '..', 'database.json');
 let isPg = false;
+
+// ─── Service Bus Init ────────────────────────────────────────────────────────
+const SB_CONN_STR = process.env.SERVICE_BUS_CONNECTION_STRING;
+const SB_QUEUE_NAME = 'kyc-notifications';
+let sbClient = null;
+let sbSender = null;
+
+if (SB_CONN_STR) {
+  sbClient = new ServiceBusClient(SB_CONN_STR);
+  sbSender = sbClient.createSender(SB_QUEUE_NAME);
+  console.log('[ADMIN] Connected to Azure Service Bus');
+}
 
 (async () => {
   const connected = await initDatabase();
@@ -106,6 +119,33 @@ app.post('/api/admin/kyc-status', authenticateToken, requireAdmin, async (req, r
     }
 
     console.log(`[ADMIN] User ${userId} KYC status updated to ${status}`);
+
+    // If verified, send notification via Service Bus
+    if (status === 'Verified' && sbSender) {
+      let userEmail = 'unknown@example.com';
+      if (isPg) {
+        const uRes = await query('SELECT email FROM bank_users WHERE id = $1', [parseInt(userId)]);
+        if (uRes.rows.length > 0) userEmail = uRes.rows[0].email;
+      } else {
+        const data = readJsonDb(JSON_DB_PATH);
+        const user = data?.users?.find(u => u.id === parseInt(userId));
+        if (user) userEmail = user.email;
+      }
+
+      const message = {
+        body: {
+          userId: parseInt(userId),
+          email: userEmail,
+          status: 'Verified',
+          message: 'Your documents are validated and you are a member of apex bank'
+        },
+        contentType: 'application/json'
+      };
+      
+      await sbSender.sendMessages(message);
+      console.log(`[ADMIN] Pushed KYC Success notification to Service Bus for ${userEmail}`);
+    }
+
     res.json({ message: `KYC Status updated to ${status}.` });
   } catch (error) {
     console.error('[ADMIN] KYC update error:', error);

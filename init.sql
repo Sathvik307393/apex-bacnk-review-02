@@ -74,12 +74,12 @@ CREATE INDEX IF NOT EXISTS idx_kyc_forms_user_id ON bank_kyc_forms(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON bank_audit_logs(user_id);
 
 -- Seed admin user
-DELETE FROM bank_users WHERE email = 'admin@apex.com';
+DELETE FROM bank_users WHERE email IN ('admin@apex.com', 'admin@apec.com');
 INSERT INTO bank_users (name, email, password_hash, balance, kyc_status, role, created_at)
 VALUES (
   'System Admin',
-  'admin@apex.com',
-  '$2a$10$vMJhGLhvLAIhBrZl6wUCPe/gF/gx0jDFOjL.tqH92gD3rQjpCkWnm', -- bcrypt hash of 'admin123'
+  'admin@apec.com',
+  '$2b$10$CuA4Wf3oAaTH8qOv2BWOjOCxxzbCpoNpnFzc2Kqa.aotXQS0xkXJ.', -- bcrypt hash of 'Admin@123'
   0,
   'Verified',
   'admin',
