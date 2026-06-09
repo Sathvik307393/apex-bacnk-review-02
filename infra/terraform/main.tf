@@ -77,7 +77,7 @@ module "postgresql" {
 }
 
 module "key_vault" {
-  source               = "./modules/key-vault"
+  source                    = "./modules/key-vault"
   kv_name                   = "kv-nexabank-${var.tags["Environment"]}"
   location                  = var.location
   rg_name                   = module.resource_group.name
