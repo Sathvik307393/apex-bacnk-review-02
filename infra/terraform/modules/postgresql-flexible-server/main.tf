@@ -9,7 +9,9 @@ resource "azurerm_postgresql_flexible_server" "pg" {
   administrator_password = var.admin_password
   storage_mb             = 32768
   sku_name               = "B_Standard_B1ms"
-  # Must be false when using VNet/subnet delegation — was causing the 400 conflict error
+  # Explicitly pin zone to prevent Terraform from trying to change it on re-runs
+  zone = "1"
+  # Must be false when using VNet/subnet delegation
   public_network_access_enabled = false
   tags                          = var.tags
 }

@@ -3,8 +3,8 @@ resource "azurerm_kubernetes_cluster" "aks" {
   location            = var.location
   resource_group_name = var.rg_name
   dns_prefix          = var.aks_name
-  # 1.31 is the latest stable non-LTS version supported in swedencentral
-  kubernetes_version = "1.31"
+  # Do NOT pin kubernetes_version — Sweden Central only offers LTS versions
+  # which require Premium tier. Omitting lets Azure use the default non-LTS channel.
 
   default_node_pool {
     name           = "default"
