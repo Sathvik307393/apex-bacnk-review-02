@@ -9,7 +9,9 @@ resource "azurerm_kubernetes_cluster" "aks" {
   default_node_pool {
     name           = "default"
     node_count     = 2
-    vm_size        = "Standard_DS2_v2"
+    # Standard_DS2_v2 is not allowed in northeurope for this subscription.
+    # Using Standard_EC2ads_v5 as it was explicitly listed in the allowed SKUs error.
+    vm_size        = "Standard_EC2ads_v5"
     vnet_subnet_id = var.subnet_id
   }
 
