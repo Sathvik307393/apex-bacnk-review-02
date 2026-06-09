@@ -77,10 +77,8 @@ metadata:
   namespace: nexabank
   labels:
     app: nexa-api-gateway
-  annotations:
-    service.beta.kubernetes.io/azure-load-balancer-health-probe-request-path: /health
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: nexa-api-gateway
   ports:
@@ -88,7 +86,3 @@ spec:
       port: 80
       targetPort: 3000
       protocol: TCP
-
-
-
-
