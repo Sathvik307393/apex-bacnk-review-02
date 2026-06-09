@@ -69,6 +69,7 @@ spec:
             readOnly: true
             volumeAttributes:
               secretProviderClass: "azure-kvname-user-msi"
+---
 apiVersion: v1
 kind: Service
 metadata:
