@@ -12,9 +12,11 @@ resource "azurerm_key_vault" "kv" {
   tags                        = var.tags
 
   access_policy {
-    tenant_id          = data.azurerm_client_config.current.tenant_id
-    object_id          = data.azurerm_client_config.current.object_id
-    secret_permissions = ["Get", "List", "Set", "Delete", "Recover", "Backup", "Restore"]
+    tenant_id = data.azurerm_client_config.current.tenant_id
+    object_id = data.azurerm_client_config.current.object_id
+    # "Purge" is required when Terraform destroys and recreates the vault
+    # (e.g. when changing regions) — soft-deleted secrets must be purged first
+    secret_permissions = ["Get", "List", "Set", "Delete", "Recover", "Backup", "Restore", "Purge"]
   }
 }
 
