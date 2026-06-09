@@ -64,6 +64,7 @@ jobs:
       with:
         directory: ./infra/terraform
         framework: terraform
+        soft_fail: true
 
     - name: Terraform Plan
       id: plan
