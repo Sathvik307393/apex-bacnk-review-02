@@ -69,7 +69,6 @@ spec:
             readOnly: true
             volumeAttributes:
               secretProviderClass: "azure-kvname-user-msi"
----
 apiVersion: v1
 kind: Service
 metadata:
@@ -78,7 +77,7 @@ metadata:
   labels:
     app: nexa-api-gateway
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   selector:
     app: nexa-api-gateway
   ports:
