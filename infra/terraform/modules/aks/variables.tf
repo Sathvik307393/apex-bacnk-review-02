@@ -20,3 +20,7 @@ variable "tags" {
   description = "Tags to apply to the AKS cluster"
 }
 
+variable "acr_id" {
+  type        = string
+  description = "The ID of the Azure Container Registry to pull images from"
+}

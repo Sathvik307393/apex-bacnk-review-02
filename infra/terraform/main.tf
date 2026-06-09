@@ -82,12 +82,21 @@ module "key_vault" {
   tags                 = var.tags
 }
 
+module "acr" {
+  source              = "./modules/acr"
+  acr_name            = "apexbankregistry${var.tags["Environment"]}"
+  resource_group_name = module.resource_group.name
+  location            = var.location
+  tags                = var.tags
+}
+
 module "aks" {
   source    = "./modules/aks"
   aks_name  = "nexa-aks-${var.tags["Environment"]}"
   location  = var.location
   rg_name   = module.resource_group.name
   subnet_id = module.network.aks_subnet_id
+  acr_id    = module.acr.id
   tags      = var.tags
 }
 
