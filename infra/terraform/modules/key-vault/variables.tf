@@ -1,14 +1,11 @@
 variable "kv_name" {
-  type        = string
-  description = "The name of the key vault"
+  type = string
 }
 variable "location" {
-  type        = string
-  description = "The location of the key vault"
+  type = string
 }
 variable "rg_name" {
-  type        = string
-  description = "The name of the resource group"
+  type = string
 }
 variable "db_password" {
   type      = string
@@ -19,8 +16,10 @@ variable "sb_connection_string" {
   sensitive = true
 }
 variable "tags" {
-  type        = map(string)
-  default     = {}
-  description = "Tags to apply to the key vault"
+  type = map(string)
 }
-
+variable "aks_kv_identity_object_id" {
+  type        = string
+  description = "The Object ID of the AKS Key Vault Secrets Provider managed identity"
+  default     = ""
+}

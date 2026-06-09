@@ -78,12 +78,13 @@ module "postgresql" {
 
 module "key_vault" {
   source               = "./modules/key-vault"
-  kv_name              = "kv-nexabank-${var.tags["Environment"]}"
-  location             = var.location
-  rg_name              = module.resource_group.name
-  db_password          = var.db_admin_password
-  sb_connection_string = module.service_bus.primary_connection_string
-  tags                 = var.tags
+  kv_name                   = "kv-nexabank-${var.tags["Environment"]}"
+  location                  = var.location
+  rg_name                   = module.resource_group.name
+  db_password               = var.db_admin_password
+  sb_connection_string      = module.service_bus.primary_connection_string
+  tags                      = var.tags
+  aks_kv_identity_object_id = module.aks.kv_identity_object_id
 }
 
 module "acr" {

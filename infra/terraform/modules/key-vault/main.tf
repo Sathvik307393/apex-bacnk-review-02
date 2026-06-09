@@ -18,6 +18,15 @@ resource "azurerm_key_vault" "kv" {
     # (e.g. when changing regions) — soft-deleted secrets must be purged first
     secret_permissions = ["Get", "List", "Set", "Delete", "Recover", "Backup", "Restore", "Purge"]
   }
+
+  dynamic "access_policy" {
+    for_each = var.aks_kv_identity_object_id != "" ? [1] : []
+    content {
+      tenant_id = data.azurerm_client_config.current.tenant_id
+      object_id = var.aks_kv_identity_object_id
+      secret_permissions = ["Get"]
+    }
+  }
 }
 
 resource "azurerm_key_vault_secret" "db_password" {
