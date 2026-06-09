@@ -16,7 +16,7 @@ module "network" {
 
 module "storage_account" {
   source       = "./modules/storage-account"
-  storage_name = "nexabankstorage${var.tags["Environment"]}"
+  storage_name = "stnexabank${var.tags["Environment"]}"
   location     = var.location
   rg_name      = module.resource_group.name
   tags         = var.tags
@@ -30,7 +30,7 @@ module "entra_rbac" {
 
 module "service_bus" {
   source   = "./modules/service-bus"
-  sb_name  = "nexabanksb${var.tags["Environment"]}"
+  sb_name  = "sb-nexabank-${var.tags["Environment"]}"
   location = var.location
   rg_name  = module.resource_group.name
   tags     = var.tags
@@ -38,7 +38,7 @@ module "service_bus" {
 
 module "log_analytics" {
   source   = "./modules/log-analytics"
-  law_name = "nexa-law-${var.tags["Environment"]}"
+  law_name = "log-nexabank-${var.tags["Environment"]}"
   location = var.location
   rg_name  = module.resource_group.name
   tags     = var.tags
@@ -46,7 +46,7 @@ module "log_analytics" {
 
 module "monitoring" {
   source                     = "./modules/monitoring"
-  ai_name                    = "nexa-ai-${var.tags["Environment"]}"
+  ai_name                    = "appi-nexabank-${var.tags["Environment"]}"
   location                   = var.location
   rg_name                    = module.resource_group.name
   log_analytics_workspace_id = module.log_analytics.id
@@ -62,7 +62,7 @@ module "private_dns" {
 
 module "postgresql" {
   source              = "./modules/postgresql-flexible-server"
-  db_server_name      = "nexa-db-${var.tags["Environment"]}"
+  db_server_name      = "psql-nexabank-${var.tags["Environment"]}"
   rg_name             = module.resource_group.name
   location            = var.location
   subnet_id           = module.network.db_subnet_id
@@ -74,7 +74,7 @@ module "postgresql" {
 
 module "key_vault" {
   source               = "./modules/key-vault"
-  kv_name              = "nexa-kv-${var.tags["Environment"]}"
+  kv_name              = "kv-nexabank-${var.tags["Environment"]}"
   location             = var.location
   rg_name              = module.resource_group.name
   db_password          = var.db_admin_password
@@ -84,7 +84,7 @@ module "key_vault" {
 
 module "acr" {
   source              = "./modules/acr"
-  acr_name            = "apexbankregistry${var.tags["Environment"]}"
+  acr_name            = "crnexabank${var.tags["Environment"]}"
   resource_group_name = module.resource_group.name
   location            = var.location
   tags                = var.tags
@@ -92,7 +92,7 @@ module "acr" {
 
 module "aks" {
   source    = "./modules/aks"
-  aks_name  = "nexa-aks-${var.tags["Environment"]}"
+  aks_name  = "aks-nexabank-${var.tags["Environment"]}"
   location  = var.location
   rg_name   = module.resource_group.name
   subnet_id = module.network.aks_subnet_id
@@ -102,7 +102,7 @@ module "aks" {
 
 module "application_gateway" {
   source     = "./modules/application-gateway"
-  appgw_name = "nexa-appgw-${var.tags["Environment"]}"
+  appgw_name = "agw-nexabank-${var.tags["Environment"]}"
   rg_name    = module.resource_group.name
   location   = var.location
   subnet_id  = module.network.appgw_subnet_id
@@ -111,7 +111,7 @@ module "application_gateway" {
 
 module "nsg" {
   source   = "./modules/nsg"
-  nsg_name = "nexa-nsg-${var.tags["Environment"]}"
+  nsg_name = "nsg-nexabank-${var.tags["Environment"]}"
   location = var.location
   rg_name  = module.resource_group.name
   tags     = var.tags
@@ -119,7 +119,7 @@ module "nsg" {
 
 module "route_table" {
   source   = "./modules/route-table"
-  rt_name  = "nexa-rt-${var.tags["Environment"]}"
+  rt_name  = "rt-nexabank-${var.tags["Environment"]}"
   location = var.location
   rg_name  = module.resource_group.name
   tags     = var.tags
@@ -127,7 +127,7 @@ module "route_table" {
 
 module "pe_keyvault" {
   source             = "./modules/private-endpoints"
-  pe_name            = "nexa-pe-kv-${var.tags["Environment"]}"
+  pe_name            = "pe-kv-nexabank-${var.tags["Environment"]}"
   location           = var.location
   rg_name            = module.resource_group.name
   subnet_id          = module.network.pe_subnet_id
@@ -137,7 +137,7 @@ module "pe_keyvault" {
 
 module "front_door" {
   source         = "./modules/front-door"
-  frontdoor_name = "apexbank-fd-${var.tags["Environment"]}"
+  frontdoor_name = "afd-nexabank-${var.tags["Environment"]}"
   rg_name        = module.resource_group.name
   # location           = var.location
   custom_domain_name = "sathvikdevops.site"

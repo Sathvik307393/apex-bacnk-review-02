@@ -1,7 +1,7 @@
-rg_name            = "nexabank-prod-rg"
-location           = "eastus"
-vnet_name          = "nexabank-prod-vnet"
-vnet_address_space = ["10.1.0.0/16"]
+rg_name            = "rg-nexabank-prod"
+location           = "swedencentral"
+vnet_name          = "vnet-nexabank-prod"
+vnet_address_space = ["172.17.0.0/16"]
 tags = {
   Environment = "prod"
   Project     = "NexaBank"

@@ -47,13 +47,13 @@ jobs:
       uses: azure/CLI@v1
       with:
         inlineScript: |
-          az group create --name tfstate-rg --location eastus
-          az storage account create --resource-group tfstate-rg --name nexatfstate307393 --sku Standard_LRS --encryption-services blob
-          az storage container create --name tfstate --account-name nexatfstate307393 --auth-mode login || true
+          az group create --name rg-nexabank-tfstate --location swedencentral
+          az storage account create --resource-group rg-nexabank-tfstate --name stnexabanktfstate --sku Standard_LRS --encryption-services blob
+          az storage container create --name blob-tfstate --account-name stnexabanktfstate --auth-mode login || true
 
     - name: Terraform Init
       id: init
-      run: terraform init -backend-config="resource_group_name=tfstate-rg" -backend-config="storage_account_name=nexatfstate307393" -backend-config="container_name=tfstate" -backend-config="key=dev.terraform.tfstate"
+      run: terraform init -backend-config="resource_group_name=rg-nexabank-tfstate" -backend-config="storage_account_name=stnexabanktfstate" -backend-config="container_name=blob-tfstate" -backend-config="key=dev.terraform.tfstate"
 
     - name: Terraform Validate
       id: validate
