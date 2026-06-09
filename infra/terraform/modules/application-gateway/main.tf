@@ -7,6 +7,29 @@ resource "azurerm_public_ip" "appgw_pip" {
   tags                = var.tags
 }
 
+# WAF policy required by WAF_v2 SKU — was missing and causing the 400 error
+resource "azurerm_web_application_firewall_policy" "appgw_waf" {
+  name                = "${var.appgw_name}-waf-policy"
+  resource_group_name = var.rg_name
+  location            = var.location
+  tags                = var.tags
+
+  policy_settings {
+    enabled                     = true
+    mode                        = "Prevention"
+    request_body_check          = true
+    max_request_body_size_in_kb = 128
+    file_upload_limit_in_mb     = 100
+  }
+
+  managed_rules {
+    managed_rule_set {
+      type    = "OWASP"
+      version = "3.2"
+    }
+  }
+}
+
 resource "azurerm_application_gateway" "appgw" {
   name                = var.appgw_name
   resource_group_name = var.rg_name
@@ -17,6 +40,9 @@ resource "azurerm_application_gateway" "appgw" {
     tier     = "WAF_v2"
     capacity = 2
   }
+
+  # Link the WAF policy to the gateway
+  firewall_policy_id = azurerm_web_application_firewall_policy.appgw_waf.id
 
   gateway_ip_configuration {
     name      = "appgw-ip-config"
@@ -63,4 +89,3 @@ resource "azurerm_application_gateway" "appgw" {
 
   tags = var.tags
 }
-

@@ -22,11 +22,15 @@ module "storage_account" {
   tags         = var.tags
 }
 
-module "entra_rbac" {
-  source             = "./modules/entra-rbac"
-  guest_email        = "sathvik.vbn@gmail.com" # Example email
-  storage_account_id = module.storage_account.id
-}
+# NOTE: Entra RBAC guest invite requires 'User.Invite.All' permission on the
+# Service Principal used by GitHub Actions. This is a Microsoft Graph API
+# privilege that must be explicitly granted by an Azure AD Global Admin.
+# Disabled for now to unblock the main infrastructure deployment.
+# module "entra_rbac" {
+#   source             = "./modules/entra-rbac"
+#   guest_email        = "sathvik.vbn@gmail.com"
+#   storage_account_id = module.storage_account.id
+# }
 
 module "service_bus" {
   source   = "./modules/service-bus"
@@ -135,11 +139,12 @@ module "pe_keyvault" {
   subresource_names  = ["vault"]
 }
 
-module "front_door" {
-  source         = "./modules/front-door"
-  frontdoor_name = "afd-nexabank-${var.tags["Environment"]}"
-  rg_name        = module.resource_group.name
-  # location           = var.location
-  custom_domain_name = "sathvikdevops.site"
-  tags               = var.tags
-}
+# NOTE: Azure Front Door is NOT supported on Free Trial / Student Azure accounts.
+# This module must be enabled after upgrading to a Pay-As-You-Go subscription.
+# module "front_door" {
+#   source             = "./modules/front-door"
+#   frontdoor_name     = "afd-nexabank-${var.tags["Environment"]}"
+#   rg_name            = module.resource_group.name
+#   custom_domain_name = "sathvikdevops.site"
+#   tags               = var.tags
+# }

@@ -9,6 +9,7 @@ resource "azurerm_postgresql_flexible_server" "pg" {
   administrator_password = var.admin_password
   storage_mb             = 32768
   sku_name               = "B_Standard_B1ms"
-  tags                   = var.tags
+  # Must be false when using VNet/subnet delegation — was causing the 400 conflict error
+  public_network_access_enabled = false
+  tags                          = var.tags
 }
-

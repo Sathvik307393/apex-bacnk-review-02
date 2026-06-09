@@ -3,7 +3,8 @@ resource "azurerm_kubernetes_cluster" "aks" {
   location            = var.location
   resource_group_name = var.rg_name
   dns_prefix          = var.aks_name
-  kubernetes_version  = "1.30"
+  # 1.30 is LTS-only in swedencentral — use 1.29 (standard supported version)
+  kubernetes_version = "1.29"
 
   default_node_pool {
     name           = "default"
