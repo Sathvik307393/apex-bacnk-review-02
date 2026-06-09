@@ -49,10 +49,10 @@ spec:
                   key: JWT_SECRET
           resources:
             requests:
-              cpu: "200m"
+              cpu: "100m"
               memory: "256Mi"
             limits:
-              cpu: "500m"
+              cpu: "100m"
               memory: "512Mi"
           volumeMounts:
             - name: secrets-store-inline
@@ -94,6 +94,7 @@ spec:
       port: 3002
       targetPort: 3002
       protocol: TCP
+
 
 
 

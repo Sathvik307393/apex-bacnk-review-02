@@ -39,10 +39,10 @@ spec:
               value: "3000"
           resources:
             requests:
-              cpu: "250m"
+              cpu: "100m"
               memory: "256Mi"
             limits:
-              cpu: "500m"
+              cpu: "100m"
               memory: "512Mi"
           volumeMounts:
             - name: secrets-store-inline
@@ -88,6 +88,7 @@ spec:
       port: 80
       targetPort: 3000
       protocol: TCP
+
 
 
 

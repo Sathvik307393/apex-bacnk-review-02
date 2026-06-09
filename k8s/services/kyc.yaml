@@ -54,10 +54,10 @@ spec:
                   key: AZURE_STORAGE_CONNECTION_STRING
           resources:
             requests:
-              cpu: "250m"
+              cpu: "100m"
               memory: "384Mi"
             limits:
-              cpu: "500m"
+              cpu: "100m"
               memory: "768Mi"
           volumeMounts:
             - name: secrets-store-inline
@@ -99,6 +99,7 @@ spec:
       port: 3004
       targetPort: 3004
       protocol: TCP
+
 
 
 

@@ -56,10 +56,10 @@ spec:
           resources:
             # OCR is CPU-heavy — give it more headroom
             requests:
-              cpu: "500m"
+              cpu: "100m"
               memory: "512Mi"
             limits:
-              cpu: "1000m"
+              cpu: "100m"
               memory: "1Gi"
           volumeMounts:
             - name: secrets-store-inline
@@ -101,6 +101,7 @@ spec:
       port: 3005
       targetPort: 3005
       protocol: TCP
+
 
 
 
