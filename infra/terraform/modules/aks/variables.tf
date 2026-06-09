@@ -1,26 +1,10 @@
-variable "aks_name" {
-  type        = string
-  description = "The name of the AKS cluster"
+variable "aks_name" { type = string }
+variable "location" { type = string }
+variable "rg_name" { type = string }
+variable "subnet_id" { type = string }
+variable "acr_id" { type = string }
+variable "appgw_id" { 
+  type = string 
+  description = "Application Gateway ID for the AGIC addon"
 }
-variable "location" {
-  type        = string
-  description = "The location of the AKS cluster"
-}
-variable "rg_name" {
-  type        = string
-  description = "The name of the resource group"
-}
-variable "subnet_id" {
-  type        = string
-  description = "The ID of the subnet"
-}
-variable "tags" {
-  type        = map(string)
-  default     = {}
-  description = "Tags to apply to the AKS cluster"
-}
-
-variable "acr_id" {
-  type        = string
-  description = "The ID of the Azure Container Registry to pull images from"
-}
+variable "tags" { type = map(string) }

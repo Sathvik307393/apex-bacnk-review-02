@@ -102,6 +102,7 @@ module "aks" {
   rg_name   = module.resource_group.name
   subnet_id = module.network.aks_subnet_id
   acr_id    = module.acr.id
+  appgw_id  = module.application_gateway.id
   tags      = var.tags
 }
 
