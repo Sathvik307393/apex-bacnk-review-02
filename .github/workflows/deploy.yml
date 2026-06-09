@@ -83,6 +83,11 @@ jobs:
           resource-group: ${{ env.RESOURCE_GROUP }}
           cluster-name: ${{ env.AKS_CLUSTER }}
 
+      - name: Seed Key Vault with GitHub Secrets
+        run: |
+          az keyvault secret set --vault-name kv-nexabank-dev --name JWT-SECRET --value "${{ secrets.JWT_SECRET }}"
+          az keyvault secret set --vault-name kv-nexabank-dev --name AZURE-STORAGE-CONNECTION-STRING --value "${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}"
+
       # Apply namespace, configmap and secrets (idempotent)
       - name: Apply base manifests
         run: |
