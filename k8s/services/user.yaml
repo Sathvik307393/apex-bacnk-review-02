@@ -10,7 +10,7 @@ metadata:
     app: nexa-user
     component: user
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: nexa-user
@@ -94,5 +94,6 @@ spec:
       port: 3002
       targetPort: 3002
       protocol: TCP
+
 
 

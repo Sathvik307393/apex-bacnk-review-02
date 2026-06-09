@@ -10,7 +10,7 @@ metadata:
     app: nexa-transactions
     component: transactions
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: nexa-transactions
@@ -94,5 +94,6 @@ spec:
       port: 3003
       targetPort: 3003
       protocol: TCP
+
 
 

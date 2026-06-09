@@ -10,7 +10,7 @@ metadata:
     app: nexa-auth
     component: auth
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: nexa-auth
@@ -94,5 +94,6 @@ spec:
       port: 3001
       targetPort: 3001
       protocol: TCP
+
 
 

@@ -10,7 +10,7 @@ metadata:
     app: nexa-kyc
     component: kyc
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: nexa-kyc
@@ -99,5 +99,6 @@ spec:
       port: 3004
       targetPort: 3004
       protocol: TCP
+
 
 

@@ -10,7 +10,7 @@ metadata:
     app: nexa-api-gateway
     component: gateway
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: nexa-api-gateway
@@ -88,5 +88,6 @@ spec:
       port: 80
       targetPort: 3000
       protocol: TCP
+
 
 
