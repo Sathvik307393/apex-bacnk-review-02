@@ -44,6 +44,10 @@ spec:
             limits:
               cpu: "500m"
               memory: "512Mi"
+          volumeMounts:
+            - name: secrets-store-inline
+              mountPath: "/mnt/secrets-store"
+              readOnly: true
           livenessProbe:
             httpGet:
               path: /health
@@ -58,6 +62,13 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 10
             failureThreshold: 3
+      volumes:
+        - name: secrets-store-inline
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: "azure-kvname-user-msi"
 ---
 apiVersion: v1
 kind: Service
@@ -77,3 +88,4 @@ spec:
       port: 80
       targetPort: 3000
       protocol: TCP
+
