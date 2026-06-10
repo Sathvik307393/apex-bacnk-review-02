@@ -47,10 +47,11 @@ if (AZURE_CONN_STR) {
  * Upload a buffer to Azure Blob Storage.
  * Returns the blob name (used as the file identifier stored in DB).
  */
-async function uploadToBlob(blobName, buffer, mimeType) {
+async function uploadToBlob(blobName, buffer, mimeType, metadata) {
   const blockBlobClient = containerClient.getBlockBlobClient(blobName);
   await blockBlobClient.upload(buffer, buffer.length, {
-    blobHTTPHeaders: { blobContentType: mimeType }
+    blobHTTPHeaders: { blobContentType: mimeType },
+    metadata
   });
   return blobName;
 }
@@ -123,7 +124,11 @@ app.post('/api/kyc/upload', authenticateToken, (req, res) => {
     try {
       if (containerClient) {
         // ── Azure Blob path ──
-        await uploadToBlob(fileName, req.file.buffer, req.file.mimetype);
+        await uploadToBlob(fileName, req.file.buffer, req.file.mimetype, {
+          userid: String(req.user.id),
+          documenttype: encodeURIComponent(docType),
+          originalname: encodeURIComponent(req.file.originalname)
+        });
         storedPath = `azure-blob://${AZURE_CONTAINER}/${fileName}`;
         console.log(`[KYC] Uploaded to Azure Blob: ${storedPath}`);
       } else {
@@ -159,21 +164,8 @@ app.post('/api/kyc/upload', authenticateToken, (req, res) => {
         writeJsonDb(JSON_DB_PATH, data);
       }
 
-      // Trigger document processor (fire-and-forget)
-      const axios = require('axios');
-      const docProcessorUrl = process.env.DOC_PROCESSOR_URL || 'http://doc-processor:3005';
-      axios.post(`${docProcessorUrl}/api/validate`, {
-        docId,
-        userId: req.user.id,
-        docType,
-        fileName,
-        filePath: storedPath,
-        originalName: req.file.originalname,
-        mimeType: req.file.mimetype
-      }).catch(err => console.warn('[KYC] Doc processor call failed:', err.message));
-
       res.json({
-        message: `${docType} document uploaded successfully for verification.`,
+        message: `${docType} document uploaded and queued for serverless verification.`,
         docId,
         docType
       });

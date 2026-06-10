@@ -7,3 +7,15 @@ resource "azurerm_storage_account" "st" {
   tags                     = var.tags
 }
 
+resource "azurerm_storage_container" "kyc_documents" {
+  name                  = "kyc-documents"
+  storage_account_id    = azurerm_storage_account.st.id
+  container_access_type = "private"
+}
+
+resource "azurerm_storage_container" "processed_documents" {
+  name                  = "processed-and-validated-container"
+  storage_account_id    = azurerm_storage_account.st.id
+  container_access_type = "private"
+}
+

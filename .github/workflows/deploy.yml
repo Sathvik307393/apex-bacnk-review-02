@@ -28,8 +28,6 @@ jobs:
             dockerfile: ./services/transactions/Dockerfile
           - service: kyc
             dockerfile: ./services/kyc/Dockerfile
-          - service: document-processor
-            dockerfile: ./services/document-processor/Dockerfile
           - service: audit
             dockerfile: ./services/audit/Dockerfile
           - service: admin
@@ -106,12 +104,15 @@ jobs:
 
       # Apply all service manifests
       - name: Apply service manifests
-        run: kubectl apply -f k8s/services/
+        run: |
+          kubectl apply -f k8s/services/
+          kubectl delete deployment nexa-document-processor --namespace nexabank --ignore-not-found
+          kubectl delete service nexa-document-processor --namespace nexabank --ignore-not-found
 
       # Update each deployment to the exact image tag for this commit
       - name: Update image tags
         run: |
-          SERVICES=(api-gateway auth user transactions kyc document-processor audit admin)
+          SERVICES=(api-gateway auth user transactions kyc audit admin)
           for svc in "${SERVICES[@]}"; do
             CONTAINER_NAME=$(echo $svc | sed 's/-/_/g')
             kubectl set image deployment/nexa-${svc} \
@@ -122,7 +123,7 @@ jobs:
       # Wait for all rollouts to complete
       - name: Wait for rollouts
         run: |
-          DEPLOYMENTS=(nexa-audit nexa-auth nexa-user nexa-transactions nexa-kyc nexa-document-processor nexa-admin nexa-api-gateway)
+          DEPLOYMENTS=(nexa-audit nexa-auth nexa-user nexa-transactions nexa-kyc nexa-admin nexa-api-gateway)
           for dep in "${DEPLOYMENTS[@]}"; do
             echo "Waiting for $dep..."
             kubectl rollout status deployment/$dep --namespace nexabank --timeout=120s

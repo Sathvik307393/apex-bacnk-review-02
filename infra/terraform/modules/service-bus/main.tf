@@ -10,3 +10,8 @@ resource "azurerm_servicebus_queue" "sb_queue" {
   name         = "kyc-notifications"
   namespace_id = azurerm_servicebus_namespace.sb.id
 }
+
+resource "azurerm_servicebus_queue" "kyc_processing_results" {
+  name         = "kyc-processing-results"
+  namespace_id = azurerm_servicebus_namespace.sb.id
+}

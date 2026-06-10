@@ -52,6 +52,11 @@ spec:
                 secretKeyRef:
                   name: nexa-secrets
                   key: AZURE_STORAGE_CONNECTION_STRING
+            - name: SERVICE_BUS_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: nexa-secrets
+                  key: SERVICE_BUS_CONNECTION_STRING
           resources:
             requests:
               cpu: "100m"

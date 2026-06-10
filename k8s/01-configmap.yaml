@@ -20,7 +20,6 @@ data:
   USER_SERVICE_URL: "http://nexa-user:3002"
   TRANSACTION_SERVICE_URL: "http://nexa-transactions:3003"
   KYC_SERVICE_URL: "http://nexa-kyc:3004"
-  DOC_PROCESSOR_URL: "http://nexa-document-processor:3005"
   AUDIT_SERVICE_URL: "http://nexa-audit:3006"
   ADMIN_SERVICE_URL: "http://nexa-admin:3007"
 

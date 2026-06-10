@@ -76,3 +76,15 @@ jobs:
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
       # Requires manual approval in GitHub Environments if configured on the repo
       run: terraform apply -var-file="environments/dev.tfvars" -auto-approve
+
+    - name: Install Function dependencies
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      working-directory: ./functions/kyc-processor
+      run: npm install --omit=dev
+
+    - name: Deploy KYC processor Function
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      uses: Azure/functions-action@v1
+      with:
+        app-name: func-nexabank-dev
+        package: ./functions/kyc-processor
