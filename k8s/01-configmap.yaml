@@ -8,9 +8,9 @@ data:
   NODE_ENV: "production"
 
   # ── Database (non-sensitive) ──
-  DB_HOST: "apexbank-db.postgres.database.azure.com"
+  DB_HOST: "psql-nexabank-dev.postgres.database.azure.com"
   DB_PORT: "5432"
-  DB_USER: "nexaadmin"
+  DB_USER: "psqladmin"
   DB_NAME: "apex_bank"
   DB_SSL: "true"
 
