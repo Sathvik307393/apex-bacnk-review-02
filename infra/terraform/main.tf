@@ -57,20 +57,25 @@ module "monitoring" {
   tags                       = var.tags
 }
 
-module "kyc_function" {
-  source                                 = "./modules/function-app"
-  function_app_name                      = "func-nexabank-${var.tags["Environment"]}"
-  service_plan_name                      = "plan-func-nexabank-${var.tags["Environment"]}"
-  location                               = var.location
-  rg_name                                = module.resource_group.name
-  storage_account_name                   = module.storage_account.name
-  storage_account_access_key             = module.storage_account.primary_access_key
-  storage_connection_string              = module.storage_account.primary_connection_string
-  application_insights_connection_string = module.monitoring.connection_string
-  service_bus_connection_string          = module.service_bus.primary_connection_string
-  service_bus_result_queue_name          = module.service_bus.processing_results_queue_name
-  tags                                   = var.tags
-}
+# NOTE: Azure Function App (KYC processor) is NOT supported on this subscription
+# due to VM quota limit of 0 in this region. Even the Linux Y1 consumption plan
+# requires 1 VM unit, which exceeds the available quota.
+# This module must be enabled after requesting a quota increase:
+#   Azure Portal → Subscriptions → Usage + Quotas → Request Increase
+# module "kyc_function" {
+#   source                                 = "./modules/function-app"
+#   function_app_name                      = "func-nexabank-${var.tags["Environment"]}"
+#   service_plan_name                      = "plan-func-nexabank-${var.tags["Environment"]}"
+#   location                               = var.location
+#   rg_name                                = module.resource_group.name
+#   storage_account_name                   = module.storage_account.name
+#   storage_account_access_key             = module.storage_account.primary_access_key
+#   storage_connection_string              = module.storage_account.primary_connection_string
+#   application_insights_connection_string = module.monitoring.connection_string
+#   service_bus_connection_string          = module.service_bus.primary_connection_string
+#   service_bus_result_queue_name          = module.service_bus.processing_results_queue_name
+#   tags                                   = var.tags
+# }
 
 module "private_dns" {
   source   = "./modules/private-dns"

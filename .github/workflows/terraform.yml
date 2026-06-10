@@ -71,6 +71,17 @@ jobs:
       id: plan
       run: terraform plan -var-file="environments/dev.tfvars" -no-color
 
+    - name: Terraform Import (Existing Role Assignment)
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      # The AGIC Reader role assignment already exists in Azure from a previous run.
+      # We import it into state so Terraform stops trying to re-create it (409 conflict).
+      # The `|| true` prevents failure if it is already in state from a prior import.
+      run: |
+        terraform import \
+          -var-file="environments/dev.tfvars" \
+          module.aks.azurerm_role_assignment.agic_rg_reader \
+          /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.Authorization/roleAssignments/9a5f944ecab44ca8b97eacd3d69c4196 || true
+
     - name: Terraform Apply
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
       # Requires manual approval in GitHub Environments if configured on the repo
