@@ -49,6 +49,10 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          # Use the Buildx instance bundled with the runner's Docker daemon.
+          # This avoids pulling a separate BuildKit container from Docker Hub.
+          driver: docker
 
       - name: Build and push image
         uses: docker/build-push-action@v5
@@ -59,8 +63,6 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/nexa-${{ matrix.service }}:latest
             ${{ env.REGISTRY }}/nexa-${{ matrix.service }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
   # ─── Deploy to AKS ───────────────────────────────────────────────────────────
   deploy:
