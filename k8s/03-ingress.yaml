@@ -3,6 +3,9 @@ kind: Ingress
 metadata:
   name: nexa-ingress
   namespace: nexabank
+  annotations:
+    appgw.ingress.kubernetes.io/health-probe-path: /health
+    appgw.ingress.kubernetes.io/health-probe-status-codes: "200-399"
 spec:
   ingressClassName: azure-application-gateway
   rules:

@@ -100,6 +100,7 @@ module "aks" {
   aks_name  = "aks-nexabank-${var.tags["Environment"]}"
   location  = var.location
   rg_name   = module.resource_group.name
+  rg_id     = module.resource_group.id
   subnet_id = module.network.aks_subnet_id
   acr_id    = module.acr.id
   appgw_id  = module.application_gateway.id

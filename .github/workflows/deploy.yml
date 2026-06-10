@@ -128,16 +128,27 @@ jobs:
             kubectl rollout status deployment/$dep --namespace nexabank --timeout=120s
           done
 
-      # Print the public IP of the API Gateway
-      - name: Get API Gateway URL
+      - name: Verify Application Gateway ingress
         run: |
-          echo "Waiting for external IP..."
-          for i in {1..12}; do
-            IP=$(kubectl get svc nexa-api-gateway -n nexabank -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
-            if [ -n "$IP" ]; then
-              echo "✅ API Gateway is live at: http://$IP"
+          echo "Waiting for AGIC to publish the ingress address..."
+          for i in {1..18}; do
+            ENDPOINTS=$(kubectl get endpoints nexa-api-gateway -n nexabank -o jsonpath='{.subsets[*].addresses[*].ip}')
+            ADDRESS=$(kubectl get ingress nexa-ingress -n nexabank -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+            if [ -n "$ENDPOINTS" ] && [ -n "$ADDRESS" ]; then
+              echo "Application Gateway is routing to: $ENDPOINTS"
+              echo "Application URL: http://$ADDRESS"
+              curl --fail --retry 6 --retry-delay 10 --max-time 15 "http://$ADDRESS/health"
               break
             fi
-            echo "Attempt $i/12 — waiting 10s..."
+            echo "Attempt $i/18: endpoints='$ENDPOINTS', ingress='$ADDRESS'"
             sleep 10
           done
+
+          if [ -z "$ENDPOINTS" ] || [ -z "$ADDRESS" ]; then
+            kubectl get pods,svc,endpoints,ingress -n nexabank -o wide
+            kubectl describe ingress nexa-ingress -n nexabank
+            kubectl get events -n nexabank --sort-by='.lastTimestamp'
+            kubectl logs -n kube-system -l app=ingress-appgw --tail=200 || true
+            echo "AGIC did not create a healthy Application Gateway route."
+            exit 1
+          fi

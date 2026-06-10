@@ -77,10 +77,8 @@ metadata:
   namespace: nexabank
   labels:
     app: nexa-api-gateway
-  annotations:
-    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: nexa-api-gateway
   ports:
