@@ -53,6 +53,19 @@ jobs:
           az storage account create --resource-group rg-nexabank-tfstate --name stnexabanktfstate --sku Standard_LRS --encryption-services blob
           az storage container create --name blob-tfstate --account-name stnexabanktfstate --auth-mode login || true
 
+    - name: Release Stuck Terraform State Lock
+      uses: azure/CLI@v1
+      with:
+        inlineScript: |
+          # Break any stuck blob lease left by a previously failed/cancelled run.
+          # This is safe because GitHub Actions only runs one job at a time on main.
+          # The || true prevents failure if there is no active lease to break.
+          az storage blob lease break \
+            --account-name stnexabanktfstate \
+            --container-name blob-tfstate \
+            --blob-name dev.terraform.tfstate \
+            --auth-mode login || true
+
     - name: Terraform Init
       id: init
       run: terraform init -backend-config="resource_group_name=rg-nexabank-tfstate" -backend-config="storage_account_name=stnexabanktfstate" -backend-config="container_name=blob-tfstate" -backend-config="key=dev.terraform.tfstate"
