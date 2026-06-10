@@ -1,7 +1,6 @@
 variable "aks_name" { type = string }
 variable "location" { type = string }
 variable "rg_name" { type = string }
-variable "rg_id" { type = string }
 variable "subnet_id" { type = string }
 variable "acr_id" { type = string }
 variable "appgw_id" {

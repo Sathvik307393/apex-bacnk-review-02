@@ -1,19 +1,20 @@
 # ============================================================
-# Admin Service — Deployment + ClusterIP Service (INTERNAL)
+# Document Processor Service — Deployment + ClusterIP (INTERNAL)
+# Runs OCR (Tesseract) and PDF parsing — needs more CPU
 # ============================================================
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nexa-admin
+  name: nexa-document-processor
   namespace: nexabank
   labels:
-    app: nexa-admin
-    component: admin
+    app: nexa-document-processor
+    component: document-processor
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: nexa-admin
+      app: nexa-document-processor
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -22,21 +23,21 @@ spec:
   template:
     metadata:
       labels:
-        app: nexa-admin
-        component: admin
+        app: nexa-document-processor
+        component: document-processor
     spec:
       containers:
-        - name: admin
-          image: apexbankregistry.azurecr.io/nexa-admin:latest
+        - name: document-processor
+          image: apexbankregistry.azurecr.io/nexa-document-processor:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 3007
+            - containerPort: 3005
           envFrom:
             - configMapRef:
                 name: nexa-config
           env:
             - name: PORT
-              value: "3007"
+              value: "3005"
             - name: DB_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -53,12 +54,13 @@ spec:
                   name: nexa-secrets
                   key: AZURE_STORAGE_CONNECTION_STRING
           resources:
+            # OCR is CPU-heavy — give it more headroom
             requests:
               cpu: "100m"
-              memory: "192Mi"
+              memory: "512Mi"
             limits:
               cpu: "100m"
-              memory: "384Mi"
+              memory: "1Gi"
           volumeMounts:
             - name: secrets-store-inline
               mountPath: "/mnt/secrets-store"
@@ -66,15 +68,15 @@ spec:
           livenessProbe:
             httpGet:
               path: /health
-              port: 3007
-            initialDelaySeconds: 15
-            periodSeconds: 20
+              port: 3005
+            initialDelaySeconds: 20
+            periodSeconds: 30
           readinessProbe:
             httpGet:
               path: /health
-              port: 3007
-            initialDelaySeconds: 10
-            periodSeconds: 10
+              port: 3005
+            initialDelaySeconds: 15
+            periodSeconds: 15
       volumes:
         - name: secrets-store-inline
           csi:
@@ -86,17 +88,20 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: nexa-admin
+  name: nexa-document-processor
   namespace: nexabank
   labels:
-    app: nexa-admin
+    app: nexa-document-processor
 spec:
   type: ClusterIP
   selector:
-    app: nexa-admin
+    app: nexa-document-processor
   ports:
     - name: http
-      port: 3007
-      targetPort: 3007
+      port: 3005
+      targetPort: 3005
       protocol: TCP
+
+
+
 

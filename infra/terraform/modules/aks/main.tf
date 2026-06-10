@@ -48,10 +48,3 @@ resource "azurerm_role_assignment" "agic_appgw_contributor" {
   scope                            = var.appgw_id
   skip_service_principal_aad_check = true
 }
-
-resource "azurerm_role_assignment" "agic_rg_reader" {
-  principal_id                     = azurerm_kubernetes_cluster.aks.ingress_application_gateway[0].ingress_application_gateway_identity[0].object_id
-  role_definition_name             = "Reader"
-  scope                            = var.rg_id
-  skip_service_principal_aad_check = true
-}

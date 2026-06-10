@@ -26,15 +26,12 @@ let isPg = false;
 // ─── Service Bus Init ────────────────────────────────────────────────────────
 const SB_CONN_STR = process.env.SERVICE_BUS_CONNECTION_STRING;
 const SB_QUEUE_NAME = 'kyc-notifications';
-const SB_RESULT_QUEUE_NAME = 'kyc-processing-results';
 let sbClient = null;
 let sbSender = null;
-let sbResultReceiver = null;
 
 if (SB_CONN_STR) {
   sbClient = new ServiceBusClient(SB_CONN_STR);
   sbSender = sbClient.createSender(SB_QUEUE_NAME);
-  sbResultReceiver = sbClient.createReceiver(SB_RESULT_QUEUE_NAME);
   console.log('[ADMIN] Connected to Azure Service Bus');
 }
 
@@ -42,51 +39,6 @@ if (SB_CONN_STR) {
   const connected = await initDatabase();
   isPg = connected;
   console.log('[ADMIN]', isPg ? 'Using PostgreSQL' : 'Using JSON database');
-
-  if (sbResultReceiver) {
-    sbResultReceiver.subscribe({
-      processMessage: async (message) => {
-        const result = message.body;
-        if (result?.type !== 'KYC_DOCUMENT_PROCESSED' || !result.sourceBlob) {
-          console.warn('[ADMIN] Ignoring invalid KYC processing result');
-          return;
-        }
-
-        const extractedData = result.extractedNumber
-          ? JSON.stringify({
-              type: result.documentType,
-              number: result.extractedNumber,
-              processed_blob: result.processedBlob
-            })
-          : null;
-
-        if (isPg) {
-          await query(
-            'UPDATE bank_kyc_docs SET status = $1, ocr_details = $2, extracted_data = $3 WHERE file_name = $4',
-            [result.status, result.reason, extractedData, result.sourceBlob]
-          );
-        } else {
-          const data = readJsonDb(JSON_DB_PATH);
-          const document = data?.kyc_docs?.find(
-            (item) => item.file_name === result.sourceBlob
-          );
-          if (document) {
-            document.status = result.status;
-            document.ocr_details = result.reason;
-            document.extracted_data = extractedData;
-            writeJsonDb(JSON_DB_PATH, data);
-          }
-        }
-
-        console.log(
-          `[ADMIN] Applied Function result for ${result.sourceBlob}: ${result.status}`
-        );
-      },
-      processError: async (args) => {
-        console.error('[ADMIN] Service Bus result receiver error:', args.error);
-      }
-    });
-  }
 })();
 
 /**
@@ -247,9 +199,6 @@ app.listen(PORT, () => {
 
 process.on('SIGTERM', async () => {
   console.log('[ADMIN] Shutting down gracefully');
-  if (sbResultReceiver) await sbResultReceiver.close();
-  if (sbSender) await sbSender.close();
-  if (sbClient) await sbClient.close();
   await closeDatabase();
   process.exit(0);
 });

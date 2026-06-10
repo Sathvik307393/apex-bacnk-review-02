@@ -18,7 +18,8 @@ jobs:
       ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-      TF_VAR_db_admin_password: ${{ secrets.DB_PASSWORD }}
+      TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+      TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
 
     defaults:
       run:
@@ -71,30 +72,7 @@ jobs:
       id: plan
       run: terraform plan -var-file="environments/dev.tfvars" -no-color
 
-    - name: Terraform Import (Existing Role Assignment)
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      # The AGIC Reader role assignment already exists in Azure from a previous run.
-      # We import it into state so Terraform stops trying to re-create it (409 conflict).
-      # The `|| true` prevents failure if it is already in state from a prior import.
-      run: |
-        terraform import \
-          -var-file="environments/dev.tfvars" \
-          module.aks.azurerm_role_assignment.agic_rg_reader \
-          /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/providers/Microsoft.Authorization/roleAssignments/9a5f944ecab44ca8b97eacd3d69c4196 || true
-
     - name: Terraform Apply
       if: github.ref == 'refs/heads/main' && github.event_name == 'push'
       # Requires manual approval in GitHub Environments if configured on the repo
       run: terraform apply -var-file="environments/dev.tfvars" -auto-approve
-
-    - name: Install Function dependencies
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      working-directory: ./functions/kyc-processor
-      run: npm install --omit=dev
-
-    - name: Deploy KYC processor Function
-      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-      uses: Azure/functions-action@v1
-      with:
-        app-name: func-nexabank-dev
-        package: ./functions/kyc-processor
