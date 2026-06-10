@@ -133,7 +133,7 @@ jobs:
         run: |
           echo "Waiting for external IP..."
           for i in {1..12}; do
-            IP=$(kubectl get svc nexa-api-gateway -n nexabank -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+            IP=$(kubectl get ingress nexa-ingress -n nexabank -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
             if [ -n "$IP" ]; then
               echo "✅ API Gateway is live at: http://$IP"
               break
