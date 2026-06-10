@@ -2,12 +2,15 @@ resource "azurerm_service_plan" "functions" {
   name                = var.service_plan_name
   resource_group_name = var.rg_name
   location            = var.location
-  os_type             = "Windows"
+  # Switched from Windows to Linux — Windows Y1 requires VM quota that
+  # free/trial subscriptions don't have. Linux consumption plan uses a
+  # separate quota pool that is available on all subscription types.
+  os_type             = "Linux"
   sku_name            = "Y1"
   tags                = var.tags
 }
 
-resource "azurerm_windows_function_app" "kyc_processor" {
+resource "azurerm_linux_function_app" "kyc_processor" {
   name                        = var.function_app_name
   resource_group_name         = var.rg_name
   location                    = var.location
@@ -30,7 +33,7 @@ resource "azurerm_windows_function_app" "kyc_processor" {
 
   site_config {
     application_stack {
-      node_version = "~20"
+      node_version = "20"
     }
   }
 }
